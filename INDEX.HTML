@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>String Converter</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-light: 0 10px 40px rgba(0, 0, 0, 0.1);
+            --shadow-heavy: 0 25px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            animation: gradientShift 15s ease infinite;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% {
+                background: var(--primary-gradient);
+            }
+            50% {
+                background: var(--secondary-gradient);
+            }
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow-light);
+            width: 100%;
+            max-width: 520px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+        }
+
+        .container:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--text-primary);
+            font-size: clamp(1.8rem, 4vw, 2.2rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .input-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-divider {
+            margin: 1.5rem 0;
+            position: relative;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+        }
+
+        .section-divider::after {
+            content: 'OR';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            padding: 0 1rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+        }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #fafafa;
+            font-family: 'Inter', monospace;
+            text-align: center;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #667eea;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        input[type="text"].error {
+            border-color: var(--error-color);
+            background: #fef2f2;
+        }
+
+        input[type="text"].success {
+            border-color: var(--success-color);
+            background: #f0fdf4;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            line-height: 1.4;
+        }
+
+        .error-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .convert-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+            min-width: 140px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .convert-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .convert-button:hover::before {
+            left: 100%;
+        }
+
+        .convert-button:hover {
+            background: linear-gradient(135deg, #5a67d8, #6b46c1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .convert-button:active {
+            transform: translateY(0);
+        }
+
+        .convert-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result-container {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+            border: 2px solid var(--success-color);
+            border-radius: 20px;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .result-container.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .result-label {
+            color: var(--success-color);
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .result-text {
+            font-family: 'Inter', monospace;
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            word-break: break-all;
+            line-height: 1.3;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .result-text:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: scale(1.02);
+            cursor: pointer;
+        }
+
+        .result-text.clickable {
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .result-text.clickable:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .copy-feedback {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .copy-feedback.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        .copy-feedback::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #10b981;
+        }
+
+        .name-result-display {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .name-part,
+        .number-part {
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .name-part {
+            background: rgba(255, 255, 255, 0.9);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .number-part {
+            background: rgba(255, 255, 255, 0.8);
+            border-left: 4px solid #10b981;
+        }
+
+        .name-part:hover,
+        .number-part:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.02);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .part-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .name-part .part-label {
+            color: #3b82f6;
+        }
+
+        .number-part .part-label {
+            color: #10b981;
+        }
+
+        .part-value {
+            font-family: 'Inter', monospace;
+            font-size: clamp(1.1rem, 4vw, 1.4rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            word-break: break-all;
+            line-height: 1.3;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Enhanced responsive design */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem;
+                margin: 0.5rem;
+                border-radius: 20px;
+            }
+            
+            .section-divider {
+                margin: 1.25rem 0;
+            }
+            
+            .input-container {
+                margin-bottom: 0.75rem;
+            }
+            
+            input[type="text"] {
+                padding: 0.9rem 1rem;
+                border-radius: 14px;
+            }
+            
+            .convert-button {
+                padding: 0.9rem 1.75rem;
+                border-radius: 14px;
+            }
+            
+            .result-container {
+                margin-top: 1.25rem;
+                padding: 1.25rem;
+                border-radius: 16px;
+            }
+            
+            .result-text {
+                padding: 0.8rem;
+                border-radius: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0.5rem;
+            }
+            
+            .container {
+                padding: 1.25rem;
+                margin: 0.25rem;
+                border-radius: 16px;
+            }
+            
+            .header {
+                margin-bottom: 1.5rem;
+            }
+            
+            .input-section {
+                margin-bottom: 1.25rem;
+            }
+        }
+
+        @media (max-height: 700px) {
+            .container {
+                padding: 1.5rem;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            .header {
+                margin-bottom: 1.5rem;
+            }
+            
+            .section-divider {
+                margin: 1rem 0;
+            }
+            
+            .result-container {
+                margin-top: 1.25rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 580px;
+                padding: 2.5rem;
+            }
+        }
+
+        /* High DPI displays */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .container {
+                backdrop-filter: blur(25px);
+            }
+        }
+
+        /* Landscape mobile optimization */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                padding: 0.5rem;
+            }
+            
+            .container {
+                padding: 1rem;
+                max-height: 95vh;
+                overflow-y: auto;
+            }
+            
+            .header {
+                margin-bottom: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .subtitle {
+                font-size: 0.9rem;
+            }
+            
+            .section-divider {
+                margin: 0.75rem 0;
+            }
+            
+            input[type="text"] {
+                padding: 0.75rem 1rem;
+            }
+            
+            .convert-button {
+                padding: 0.75rem 1.5rem;
+            }
+            
+            .result-container {
+                margin-top: 1rem;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>String Converter</h1>
+            <p class="subtitle">Convert letters to numbers with custom mapping</p>
+        </div>
+        
+        <div class="input-section">
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="inputString" 
+                    placeholder="Enter 3-20 character string (A-Z, 0-9)"
+                    maxlength="20"
+                    autocomplete="off"
+                >
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+            
+            <div class="section-divider"></div>
+            
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="nameInput" 
+                    placeholder="Enter name (e.g., HATTERMANN,ALAN)"
+                    autocomplete="off"
+                >
+                <div class="error-message" id="nameErrorMessage"></div>
+            </div>
+            
+            <button class="convert-button" id="convertButton">Convert</button>
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="result-label">Converted Result:</div>
+            <div class="result-text clickable" id="resultText" onclick="copyToClipboard(this)">
+                <div class="copy-feedback" id="resultFeedback">Copied!</div>
+            </div>
+        </div>
+        
+        <div class="result-container" id="nameResultContainer">
+            <div class="result-label">Name Conversion Result:</div>
+            <div class="name-result-display" id="nameResultDisplay">
+                <div class="name-part" onclick="copyToClipboard(this)">
+                    <div class="part-label">Processed Name</div>
+                    <div class="part-value" id="namePartValue"></div>
+                    <div class="copy-feedback" id="nameFeedback">Copied!</div>
+                </div>
+                <div class="number-part" onclick="copyToClipboard(this)">
+                    <div class="part-label">Dial Pad Number</div>
+                    <div class="part-value" id="numberPartValue"></div>
+                    <div class="copy-feedback" id="numberFeedback">Copied!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Letter to number mapping
+        const letterMapping = {
+            'A': '*21', 'B': '*22', 'C': '*23',
+            'D': '*31', 'E': '*32', 'F': '*33',
+            'G': '*41', 'H': '*42', 'I': '*43',
+            'J': '*51', 'K': '*52', 'L': '*53',
+            'M': '*61', 'N': '*62', 'O': '*63',
+            'P': '*71', 'Q': '*11', 'R': '*72',
+            'S': '*73', 'T': '*81', 'U': '*82',
+            'V': '*83', 'W': '*91', 'X': '*92',
+            'Y': '*93', 'Z': '*12'
+        };
+
+        // Dial pad mapping (like on phone keypad)
+        const dialPadMapping = {
+            'A': '2', 'B': '2', 'C': '2',
+            'D': '3', 'E': '3', 'F': '3',
+            'G': '4', 'H': '4', 'I': '4',
+            'J': '5', 'K': '5', 'L': '5',
+            'M': '6', 'N': '6', 'O': '6',
+            'P': '7', 'Q': '7', 'R': '7', 'S': '7',
+            'T': '8', 'U': '8', 'V': '8',
+            'W': '9', 'X': '9', 'Y': '9', 'Z': '9'
+        };
+
+        // Get DOM elements
+        const inputElement = document.getElementById('inputString');
+        const nameInputElement = document.getElementById('nameInput');
+        const convertButton = document.getElementById('convertButton');
+        const errorMessage = document.getElementById('errorMessage');
+        const nameErrorMessage = document.getElementById('nameErrorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.getElementById('resultText');
+        const nameResultContainer = document.getElementById('nameResultContainer');
+        const nameResultDisplay = document.getElementById('nameResultDisplay');
+        const namePartValue = document.getElementById('namePartValue');
+        const numberPartValue = document.getElementById('numberPartValue');
+
+        // Validation function
+        function validateInput(input) {
+            if (input.length < 3 || input.length > 20) {
+                return 'Input must be between 3 and 20 characters long.';
+            }
+            
+            if (!/^[A-Z0-9]+$/.test(input)) {
+                return 'Input must contain only uppercase letters (A-Z) and digits (0-9).';
+            }
+            
+            return null;
+        }
+
+        // Name validation function
+        function validateName(name) {
+            if (name.length === 0) {
+                return 'Name cannot be empty.';
+            }
+            
+            if (!/^[A-Z\s,]+$/.test(name)) {
+                return 'Name must contain only uppercase letters, spaces, and commas.';
+            }
+            
+            if (!name.includes(',')) {
+                return 'Name must be in format "LASTNAME,FIRSTNAME" with a comma.';
+            }
+            
+            return null;
+        }
+
+        function processName(name) {
+            const parts = name.split(',');
+            if (parts.length < 2) {
+                throw new Error('Invalid name format');
+            }
+
+            const lastName = parts[0].trim().replace(/[^A-Z]/g, '');
+            const firstNameRaw = parts[1].trim();
+
+            // Extract only the part before the first space in the first name
+            const firstNamePart = firstNameRaw.split(' ')[0].replace(/[^A-Z]/g, '');
+
+            // Take up to 6 characters
+            const firstNameExtract = firstNamePart.substring(0, 6);
+
+            const lastNameInitial = lastName.charAt(0);
+
+            const combined = firstNameExtract + lastNameInitial;
+
+            return combined;
+        }
+
+        // Convert to dial pad numbers
+        function convertToDialPad(text) {
+            let result = '';
+            for (let char of text) {
+                if (dialPadMapping[char]) {
+                    result += dialPadMapping[char];
+                } else if (/[0-9]/.test(char)) {
+                    result += char; // Keep digits as is
+                }
+            }
+            return result;
+        }
+
+        // Show error message
+        function showError(message, isName = false) {
+            const errorElement = isName ? nameErrorMessage : errorMessage;
+            const inputElement = isName ? nameInputElement : document.getElementById('inputString');
+            
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+            inputElement.classList.add('error');
+            inputElement.classList.remove('success');
+            
+            if (!isName) {
+                resultContainer.classList.remove('show');
+            } else {
+                nameResultContainer.classList.remove('show');
+            }
+        }
+
+        // Clear error message
+        function clearError(isName = false) {
+            const errorElement = isName ? nameErrorMessage : errorMessage;
+            const inputElement = isName ? nameInputElement : document.getElementById('inputString');
+            
+            errorElement.classList.remove('show');
+            inputElement.classList.remove('error');
+        }
+
+        // Show success state
+        function showSuccess(isName = false) {
+            const inputElement = isName ? nameInputElement : document.getElementById('inputString');
+            inputElement.classList.add('success');
+            inputElement.classList.remove('error');
+            clearError(isName);
+        }
+
+        // Convert string function
+        function convertString(input) {
+            let result = '';
+            for (let char of input) {
+                if (letterMapping[char]) {
+                    result += letterMapping[char];
+                } else {
+                    // It's a digit, keep as is
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        // Copy to clipboard functionality
+        function copyToClipboard(element) {
+            let textToCopy = '';
+            let feedbackElement = null;
+            
+            // Determine what to copy based on the clicked element
+            if (element.id === 'resultText') {
+                textToCopy = element.textContent;
+                feedbackElement = document.getElementById('resultFeedback');
+            } else if (element.classList.contains('name-part')) {
+                textToCopy = namePartValue.textContent;
+                feedbackElement = document.getElementById('nameFeedback');
+            } else if (element.classList.contains('number-part')) {
+                textToCopy = numberPartValue.textContent;
+                feedbackElement = document.getElementById('numberFeedback');
+            }
+            
+            // Copy to clipboard
+            if (textToCopy) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showCopyFeedback(feedbackElement);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = textToCopy;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showCopyFeedback(feedbackElement);
+                });
+            }
+        }
+
+        // Show copy feedback
+        function showCopyFeedback(feedbackElement) {
+            if (feedbackElement) {
+                feedbackElement.classList.add('show');
+                setTimeout(() => {
+                    feedbackElement.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        // Show result with animation
+        function showResult(result, isName = false) {
+            if (isName) {
+                // Split the result to get name and number parts
+                const parts = result.split(' = ');
+                const processedName = parts[0];
+                const dialPadNumber = parts[1];
+                
+                namePartValue.textContent = processedName;
+                numberPartValue.textContent = dialPadNumber;
+                
+                setTimeout(() => {
+                    nameResultContainer.classList.add('show');
+                }, 100);
+            } else {
+                resultText.textContent = result;
+                setTimeout(() => {
+                    resultContainer.classList.add('show');
+                }, 100);
+            }
+        }
+
+        // Main convert function
+        function handleConvert() {
+            const input = inputElement.value.trim().toUpperCase();
+            const nameInput = nameInputElement.value.trim().toUpperCase();
+            
+            let hasValidInput = false;
+            let hasValidName = false;
+            
+            // Validate input
+            if (input.length > 0) {
+                const validationError = validateInput(input);
+                if (validationError) {
+                    showError(validationError, false);
+                } else {
+                    hasValidInput = true;
+                    showSuccess(false);
+                }
+            }
+            
+            // Validate name input
+            if (nameInput.length > 0) {
+                const nameValidationError = validateName(nameInput);
+                if (nameValidationError) {
+                    showError(nameValidationError, true);
+                } else {
+                    hasValidName = true;
+                    showSuccess(true);
+                }
+            }
+            
+            // Check if at least one input is provided
+            if (!hasValidInput && !hasValidName) {
+                showError('Please enter either a string or a name to convert.', false);
+                return;
+            }
+
+            // Show loading state
+            const originalButtonText = convertButton.textContent;
+            convertButton.innerHTML = 'Converting<span class="loading"></span>';
+            convertButton.disabled = true;
+
+            // Simulate processing delay for better UX
+            setTimeout(() => {
+                try {
+                    // Convert the string if provided
+                    if (hasValidInput) {
+                        const result = convertString(input);
+                        showResult(result, false);
+                    } else {
+                        resultContainer.classList.remove('show');
+                    }
+                    
+                    // Convert the name if provided
+                    if (hasValidName) {
+                        const processedName = processName(nameInput);
+                        const dialPadResult = convertToDialPad(processedName);
+                        showResult(`${processedName} = ${dialPadResult}`, true);
+                    } else {
+                        nameResultContainer.classList.remove('show');
+                    }
+                } catch (error) {
+                    showError(error.message, true);
+                }
+                
+                // Reset button
+                convertButton.textContent = originalButtonText;
+                convertButton.disabled = false;
+            }, 500);
+        }
+
+        // Real-time input validation
+        inputElement.addEventListener('input', function() {
+            let value = this.value.toUpperCase();
+            this.value = value;
+            
+            if (value.length === 0) {
+                clearError(false);
+                resultContainer.classList.remove('show');
+                return;
+            }
+
+            const validationError = validateInput(value);
+            if (validationError) {
+                showError(validationError, false);
+            } else {
+                clearError(false);
+                showSuccess(false);
+            }
+        });
+
+        // Real-time name input validation
+        nameInputElement.addEventListener('input', function() {
+            let value = this.value.toUpperCase();
+            this.value = value;
+            
+            if (value.length === 0) {
+                clearError(true);
+                nameResultContainer.classList.remove('show');
+                return;
+            }
+
+            const validationError = validateName(value);
+            if (validationError) {
+                showError(validationError, true);
+            } else {
+                clearError(true);
+                showSuccess(true);
+            }
+        });
+
+        // Event listeners
+        convertButton.addEventListener('click', handleConvert);
+
+        inputElement.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleConvert();
+            }
+        });
+
+        nameInputElement.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleConvert();
+            }
+        });
+
+        // Prevent invalid characters from being typed
+        inputElement.addEventListener('keydown', function(e) {
+            if (e.key.length === 1) {
+                const char = e.key.toUpperCase();
+                if (!/^[A-Z0-9]$/.test(char)) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // Prevent invalid characters in name input
+        nameInputElement.addEventListener('keydown', function(e) {
+            if (e.key.length === 1) {
+                const char = e.key.toUpperCase();
+                if (!/^[A-Z\s,]$/.test(char)) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // Focus input on page load
+        window.addEventListener('load', () => {
+            inputElement.focus();
+        });
+
+        // Example functionality
+        function setExample() {
+            const examples = ['ABC', '7CR4M76NR75', '8UF2YQ3PF27', 'XYZ789'];
+            const randomExample = examples[Math.floor(Math.random() * examples.length)];
+            inputElement.value = randomExample;
+            inputElement.dispatchEvent(new Event('input'));
+        }
+
+        function setNameExample() {
+            const nameExamples = ['HATTERMANN,ALAN', 'MCCULLOCH,TERRI L', 'POLASEK,SAU', 'GREEN,ARLAN', 'HOGG,HERBERT'];
+            const randomExample = nameExamples[Math.floor(Math.random() * nameExamples.length)];
+            nameInputElement.value = randomExample;
+            nameInputElement.dispatchEvent(new Event('input'));
+        }
+
+        // Add double click to set example
+        inputElement.addEventListener('dblclick', setExample);
+        nameInputElement.addEventListener('dblclick', setNameExample);
+    </script>
+</body>
+</html>
