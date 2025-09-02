@@ -266,6 +266,7 @@
             border-radius: 12px;
             border: 1px solid rgba(16, 185, 129, 0.2);
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .result-text:hover {
@@ -287,7 +288,7 @@
 
         .copy-feedback {
             position: absolute;
-            top: -35px;
+            top: -50px;
             left: 50%;
             transform: translateX(-50%);
             background: #10b981;
@@ -300,6 +301,7 @@
             pointer-events: none;
             transition: all 0.3s ease;
             z-index: 1000;
+            white-space: nowrap;
         }
 
         .copy-feedback.show {
@@ -389,6 +391,71 @@
 
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        .copy-button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 120px;
+        }
+
+        .copy-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .copy-button:hover::before {
+            left: 100%;
+        }
+
+        .copy-button:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .copy-button:active {
+            transform: translateY(0);
+        }
+
+        .copy-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .copy-button.copied {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .copy-button.copied svg {
+            animation: checkmark 0.3s ease-in-out;
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
 
         /* Enhanced responsive design */
@@ -529,7 +596,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Ivr Converter</h1>
+            <h1>String Converter</h1>
             <p class="subtitle">Convert letters to numbers with custom mapping</p>
         </div>
         
@@ -562,24 +629,40 @@
 
         <div class="result-container" id="resultContainer">
             <div class="result-label">Converted Result:</div>
-            <div class="result-text clickable" id="resultText" onclick="copyToClipboard(this)">
+            <div class="result-text clickable" id="resultText">
                 <div class="copy-feedback" id="resultFeedback">Copied!</div>
             </div>
+            <button class="copy-button" id="copyResultButton">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                    <path d="m4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                </svg>
+                Copy Result
+            </button>
         </div>
         
         <div class="result-container" id="nameResultContainer">
             <div class="result-label">Name Conversion Result:</div>
             <div class="name-result-display" id="nameResultDisplay">
-                <div class="name-part" onclick="copyToClipboard(this)">
+                <div class="name-part" id="namePart">
                     <div class="part-label">Processed Name</div>
                     <div class="part-value" id="namePartValue"></div>
                     <div class="copy-feedback" id="nameFeedback">Copied!</div>
                 </div>
-                <div class="number-part" onclick="copyToClipboard(this)">
+                <div class="number-part" id="numberPart">
                     <div class="part-label">Dial Pad Number</div>
                     <div class="part-value" id="numberPartValue"></div>
                     <div class="copy-feedback" id="numberFeedback">Copied!</div>
                 </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                <button class="copy-button" id="copyNumberButton">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                        <path d="m4 16c-1.1 0-2-.9-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                    Copy Number
+                </button>
             </div>
         </div>
     </div>
@@ -598,7 +681,7 @@
             'Y': '*93', 'Z': '*12'
         };
 
-        // Dial pad mapping (like on phone keypad)
+        // Dial pad mapping
         const dialPadMapping = {
             'A': '2', 'B': '2', 'C': '2',
             'D': '3', 'E': '3', 'F': '3',
@@ -610,7 +693,7 @@
             'W': '9', 'X': '9', 'Y': '9', 'Z': '9'
         };
 
-        // Get DOM elements
+        // DOM elements
         const inputElement = document.getElementById('inputString');
         const nameInputElement = document.getElementById('nameInput');
         const convertButton = document.getElementById('convertButton');
@@ -619,357 +702,250 @@
         const resultContainer = document.getElementById('resultContainer');
         const resultText = document.getElementById('resultText');
         const nameResultContainer = document.getElementById('nameResultContainer');
-        const nameResultDisplay = document.getElementById('nameResultDisplay');
         const namePartValue = document.getElementById('namePartValue');
         const numberPartValue = document.getElementById('numberPartValue');
 
-        // Validation function
-        function validateInput(input) {
-            if (input.length < 3 || input.length > 20) {
-                return 'Input must be between 3 and 20 characters long.';
-            }
-            
-            if (!/^[A-Z0-9]+$/.test(input)) {
-                return 'Input must contain only uppercase letters (A-Z) and digits (0-9).';
-            }
-            
-            return null;
-        }
-
-        // Name validation function
-        function validateName(name) {
-            if (name.length === 0) {
-                return 'Name cannot be empty.';
-            }
-            
-            if (!/^[A-Z\s,]+$/.test(name)) {
-                return 'Name must contain only uppercase letters, spaces, and commas.';
-            }
-            
-            if (!name.includes(',')) {
-                return 'Name must be in format "LASTNAME,FIRSTNAME" with a comma.';
-            }
-            
-            return null;
-        }
-
-        function processName(name) {
-            const parts = name.split(',');
-            if (parts.length < 2) {
-                throw new Error('Invalid name format');
-            }
-
-            const lastName = parts[0].trim().replace(/[^A-Z]/g, '');
-            const firstNameRaw = parts[1].trim();
-
-            // Extract only the part before the first space in the first name
-            const firstNamePart = firstNameRaw.split(' ')[0].replace(/[^A-Z]/g, '');
-
-            // Take up to 6 characters
-            const firstNameExtract = firstNamePart.substring(0, 6);
-
-            const lastNameInitial = lastName.charAt(0);
-
-            const combined = firstNameExtract + lastNameInitial;
-
-            return combined;
-        }
-
-        // Convert to dial pad numbers
-        function convertToDialPad(text) {
-            let result = '';
-            for (let char of text) {
-                if (dialPadMapping[char]) {
-                    result += dialPadMapping[char];
-                } else if (/[0-9]/.test(char)) {
-                    result += char; // Keep digits as is
+        // Copy to clipboard function for buttons
+        async function copyTextToClipboard(text, button) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showButtonFeedback(button, true);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                // Fallback method
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showButtonFeedback(button, true);
+                } catch (fallbackErr) {
+                    console.error('Fallback copy method failed: ', fallbackErr);
+                    showButtonFeedback(button, false);
                 }
             }
-            return result;
         }
 
-        // Show error message
-        function showError(message, isName = false) {
-            const errorElement = isName ? nameErrorMessage : errorMessage;
-            const inputElement = isName ? nameInputElement : document.getElementById('inputString');
+        // Show button feedback
+        function showButtonFeedback(button, success) {
+            const originalContent = button.innerHTML;
             
-            errorElement.textContent = message;
-            errorElement.classList.add('show');
-            inputElement.classList.add('error');
-            inputElement.classList.remove('success');
-            
-            if (!isName) {
-                resultContainer.classList.remove('show');
+            if (success) {
+                button.classList.add('copied');
+                button.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                    Copied!
+                `;
             } else {
-                nameResultContainer.classList.remove('show');
+                button.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    Failed
+                `;
             }
-        }
-
-        // Clear error message
-        function clearError(isName = false) {
-            const errorElement = isName ? nameErrorMessage : errorMessage;
-            const inputElement = isName ? nameInputElement : document.getElementById('inputString');
             
-            errorElement.classList.remove('show');
-            inputElement.classList.remove('error');
+            setTimeout(() => {
+                button.classList.remove('copied');
+                button.innerHTML = originalContent;
+            }, 2000);
         }
-
-        // Show success state
-        function showSuccess(isName = false) {
-            const inputElement = isName ? nameInputElement : document.getElementById('inputString');
-            inputElement.classList.add('success');
-            inputElement.classList.remove('error');
-            clearError(isName);
-        }
-
-        // Convert string function
-        function convertString(input) {
-            let result = '';
-            for (let char of input) {
-                if (letterMapping[char]) {
-                    result += letterMapping[char];
-                } else {
-                    // It's a digit, keep as is
-                    result += char;
-                }
-            }
-            return result;
-        }
-
-        // Copy to clipboard functionality
-        function copyToClipboard(element) {
+        async function copyToClipboard(element) {
             let textToCopy = '';
             let feedbackElement = null;
-            
-            // Determine what to copy based on the clicked element
-            if (element.id === 'resultText') {
-                textToCopy = element.textContent;
-                feedbackElement = document.getElementById('resultFeedback');
+
+            // Determine what text to copy based on the clicked element
+            if (element.classList.contains('result-text')) {
+                // Get only the text content, excluding the feedback div
+                const tempDiv = element.cloneNode(true);
+                const feedbackDiv = tempDiv.querySelector('.copy-feedback');
+                if (feedbackDiv) feedbackDiv.remove();
+                textToCopy = tempDiv.textContent.trim();
+                feedbackElement = element.querySelector('.copy-feedback');
             } else if (element.classList.contains('name-part')) {
-                textToCopy = namePartValue.textContent;
-                feedbackElement = document.getElementById('nameFeedback');
+                textToCopy = element.querySelector('.part-value').textContent;
+                feedbackElement = element.querySelector('.copy-feedback');
             } else if (element.classList.contains('number-part')) {
-                textToCopy = numberPartValue.textContent;
-                feedbackElement = document.getElementById('numberFeedback');
+                textToCopy = element.querySelector('.part-value').textContent;
+                feedbackElement = element.querySelector('.copy-feedback');
             }
-            
-            // Copy to clipboard
-            if (textToCopy) {
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    showCopyFeedback(feedbackElement);
-                }).catch(() => {
-                    // Fallback for older browsers
+
+            if (!textToCopy || !feedbackElement) return;
+
+            try {
+                // Copy to clipboard
+                await navigator.clipboard.writeText(textToCopy);
+                
+                // Show feedback tooltip
+                feedbackElement.classList.add('show');
+                
+                // Hide tooltip after 2 seconds
+                setTimeout(() => {
+                    feedbackElement.classList.remove('show');
+                }, 2000);
+                
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                
+                // Fallback method for older browsers
+                try {
                     const textArea = document.createElement('textarea');
                     textArea.value = textToCopy;
                     document.body.appendChild(textArea);
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    showCopyFeedback(feedbackElement);
-                });
+                    
+                    // Show feedback tooltip
+                    feedbackElement.classList.add('show');
+                    setTimeout(() => {
+                        feedbackElement.classList.remove('show');
+                    }, 2000);
+                    
+                } catch (fallbackErr) {
+                    console.error('Fallback copy method failed: ', fallbackErr);
+                }
             }
         }
 
-        // Show copy feedback
-        function showCopyFeedback(feedbackElement) {
-            if (feedbackElement) {
-                feedbackElement.classList.add('show');
-                setTimeout(() => {
-                    feedbackElement.classList.remove('show');
-                }, 2000);
-            }
+        // Validation functions
+        function validateInput(input) {
+            if (input.length < 3 || input.length > 20) return 'Input must be between 3 and 20 characters.';
+            if (!/^[A-Z0-9]+$/.test(input)) return 'Only uppercase letters A-Z and digits 0-9 allowed.';
+            return null;
         }
 
-        // Show result with animation
+        function validateName(name) {
+            if (!name.includes(',')) return 'Format must be LASTNAME,FIRSTNAME.';
+            if (!/^[A-Z\s,]+$/.test(name)) return 'Only uppercase letters, spaces, commas allowed.';
+            return null;
+        }
+
+        // UPDATED processName: First 6 of LASTNAME + First letter of FIRSTNAME
+        function processName(name) {
+            const parts = name.split(',');
+            if (parts.length < 2) throw new Error('Invalid name format');
+
+            const lastName = parts[0].trim().replace(/[^A-Z]/g, '');
+            const firstNameRaw = parts[1].trim().replace(/[^A-Z]/g, '');
+
+            const lastNamePart = lastName.substring(0, 6);
+            const firstInitial = firstNameRaw.charAt(0);
+
+            return lastNamePart + firstInitial;
+        }
+
+        // Convert to dial pad
+        function convertToDialPad(text) {
+            return text.split('').map(c => dialPadMapping[c] || c).join('');
+        }
+
+        // Convert string
+        function convertString(input) {
+            return input.split('').map(c => letterMapping[c] || c).join('');
+        }
+
+        // Show results
         function showResult(result, isName = false) {
             if (isName) {
-                // Split the result to get name and number parts
-                const parts = result.split(' = ');
-                const processedName = parts[0];
-                const dialPadNumber = parts[1];
-                
-                namePartValue.textContent = processedName;
-                numberPartValue.textContent = dialPadNumber;
-                
-                setTimeout(() => {
-                    nameResultContainer.classList.add('show');
-                }, 100);
+                const [name, num] = result.split(' = ');
+                namePartValue.textContent = name;
+                numberPartValue.textContent = num;
+                nameResultContainer.classList.add('show');
             } else {
                 resultText.textContent = result;
-                setTimeout(() => {
-                    resultContainer.classList.add('show');
-                }, 100);
+                resultContainer.classList.add('show');
             }
         }
 
-        // Main convert function
+        // Show errors
+        function showError(message, isName = false) {
+            const el = isName ? nameErrorMessage : errorMessage;
+            el.textContent = message;
+            el.classList.add('show');
+        }
+
+        // Clear errors
+        function clearError(isName = false) {
+            const el = isName ? nameErrorMessage : errorMessage;
+            el.textContent = '';
+            el.classList.remove('show');
+        }
+
+        // Clear results
+        function clearResults() {
+            resultContainer.classList.remove('show');
+            nameResultContainer.classList.remove('show');
+        }
+
+        // Main convert handler
         function handleConvert() {
-            const input = inputElement.value.trim().toUpperCase();
-            const nameInput = nameInputElement.value.trim().toUpperCase();
+            const str = inputElement.value.trim().toUpperCase();
+            const name = nameInputElement.value.trim().toUpperCase();
             
-            let hasValidInput = false;
-            let hasValidName = false;
-            
-            // Validate input
-            if (input.length > 0) {
-                const validationError = validateInput(input);
-                if (validationError) {
-                    showError(validationError, false);
-                } else {
-                    hasValidInput = true;
-                    showSuccess(false);
-                }
-            }
-            
-            // Validate name input
-            if (nameInput.length > 0) {
-                const nameValidationError = validateName(nameInput);
-                if (nameValidationError) {
-                    showError(nameValidationError, true);
-                } else {
-                    hasValidName = true;
-                    showSuccess(true);
-                }
-            }
-            
-            // Check if at least one input is provided
-            if (!hasValidInput && !hasValidName) {
-                showError('Please enter either a string or a name to convert.', false);
-                return;
+            // Clear previous results and errors
+            clearError(true); 
+            clearError(false);
+            clearResults();
+
+            let valid = false;
+
+            if (str) {
+                const err = validateInput(str);
+                if (err) return showError(err);
+                showResult(convertString(str), false);
+                valid = true;
             }
 
-            // Show loading state
-            const originalButtonText = convertButton.textContent;
-            convertButton.innerHTML = 'Converting<span class="loading"></span>';
-            convertButton.disabled = true;
+            if (name) {
+                const err = validateName(name);
+                if (err) return showError(err, true);
+                const pname = processName(name);
+                showResult(`${pname} = ${convertToDialPad(pname)}`, true);
+                valid = true;
+            }
 
-            // Simulate processing delay for better UX
-            setTimeout(() => {
-                try {
-                    // Convert the string if provided
-                    if (hasValidInput) {
-                        const result = convertString(input);
-                        showResult(result, false);
-                    } else {
-                        resultContainer.classList.remove('show');
-                    }
-                    
-                    // Convert the name if provided
-                    if (hasValidName) {
-                        const processedName = processName(nameInput);
-                        const dialPadResult = convertToDialPad(processedName);
-                        showResult(`${processedName} = ${dialPadResult}`, true);
-                    } else {
-                        nameResultContainer.classList.remove('show');
-                    }
-                } catch (error) {
-                    showError(error.message, true);
-                }
-                
-                // Reset button
-                convertButton.textContent = originalButtonText;
-                convertButton.disabled = false;
-            }, 500);
+            if (!valid) showError('Please enter a string or name.');
         }
-
-        // Real-time input validation
-        inputElement.addEventListener('input', function() {
-            let value = this.value.toUpperCase();
-            this.value = value;
-            
-            if (value.length === 0) {
-                clearError(false);
-                resultContainer.classList.remove('show');
-                return;
-            }
-
-            const validationError = validateInput(value);
-            if (validationError) {
-                showError(validationError, false);
-            } else {
-                clearError(false);
-                showSuccess(false);
-            }
-        });
-
-        // Real-time name input validation
-        nameInputElement.addEventListener('input', function() {
-            let value = this.value.toUpperCase();
-            this.value = value;
-            
-            if (value.length === 0) {
-                clearError(true);
-                nameResultContainer.classList.remove('show');
-                return;
-            }
-
-            const validationError = validateName(value);
-            if (validationError) {
-                showError(validationError, true);
-            } else {
-                clearError(true);
-                showSuccess(true);
-            }
-        });
 
         // Event listeners
         convertButton.addEventListener('click', handleConvert);
+        inputElement.addEventListener('keypress', e => e.key === 'Enter' && handleConvert());
+        nameInputElement.addEventListener('keypress', e => e.key === 'Enter' && handleConvert());
 
-        inputElement.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                handleConvert();
-            }
+        // Clear results when input changes
+        inputElement.addEventListener('input', clearResults);
+        nameInputElement.addEventListener('input', clearResults);
+
+        // Add click event listeners for copy functionality
+        resultText.addEventListener('click', function() {
+            copyToClipboard(this);
         });
 
-        nameInputElement.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                handleConvert();
-            }
+        document.getElementById('namePart').addEventListener('click', function() {
+            copyToClipboard(this);
         });
 
-        // Prevent invalid characters from being typed
-        inputElement.addEventListener('keydown', function(e) {
-            if (e.key.length === 1) {
-                const char = e.key.toUpperCase();
-                if (!/^[A-Z0-9]$/.test(char)) {
-                    e.preventDefault();
-                }
-            }
+        document.getElementById('numberPart').addEventListener('click', function() {
+            copyToClipboard(this);
         });
 
-        // Prevent invalid characters in name input
-        nameInputElement.addEventListener('keydown', function(e) {
-            if (e.key.length === 1) {
-                const char = e.key.toUpperCase();
-                if (!/^[A-Z\s,]$/.test(char)) {
-                    e.preventDefault();
-                }
-            }
+        // Add copy button event listeners
+        document.getElementById('copyResultButton').addEventListener('click', function() {
+            const text = resultText.textContent.trim();
+            if (text) copyTextToClipboard(text, this);
         });
 
-        // Focus input on page load
-        window.addEventListener('load', () => {
-            inputElement.focus();
+        document.getElementById('copyNumberButton').addEventListener('click', function() {
+            const text = numberPartValue.textContent.trim();
+            if (text) copyTextToClipboard(text, this);
         });
-
-        // Example functionality
-        function setExample() {
-            const examples = ['ABC', '7CR4M76NR75', '8UF2YQ3PF27', 'XYZ789'];
-            const randomExample = examples[Math.floor(Math.random() * examples.length)];
-            inputElement.value = randomExample;
-            inputElement.dispatchEvent(new Event('input'));
-        }
-
-        function setNameExample() {
-            const nameExamples = ['HATTERMANN,ALAN', 'MCCULLOCH,TERRI L', 'POLASEK,SAU', 'GREEN,ARLAN', 'HOGG,HERBERT'];
-            const randomExample = nameExamples[Math.floor(Math.random() * nameExamples.length)];
-            nameInputElement.value = randomExample;
-            nameInputElement.dispatchEvent(new Event('input'));
-        }
-
-        // Add double click to set example
-        inputElement.addEventListener('dblclick', setExample);
-        nameInputElement.addEventListener('dblclick', setNameExample);
     </script>
 </body>
 </html>
